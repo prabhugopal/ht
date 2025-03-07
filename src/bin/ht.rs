@@ -1,15 +1,11 @@
-mod api;
-mod cli;
-mod command;
-mod locale;
-mod nbio;
-mod pty;
-mod session;
+extern crate ht;
+
 use anyhow::{Context, Result};
-use command::Command;
-use session::Session;
+use ht::command::Command;
+use ht::session::Session;
 use std::net::{SocketAddr, TcpListener};
 use tokio::{sync::mpsc, task::JoinHandle};
+use ht::{api, cli, command, locale, pty, session};
 
 #[tokio::main]
 async fn main() -> Result<()> {
