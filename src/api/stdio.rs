@@ -8,21 +8,7 @@ use std::thread;
 use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 
-#[derive(Debug, Deserialize)]
-struct InputArgs {
-    payload: String,
-}
 
-#[derive(Debug, Deserialize)]
-struct SendKeysArgs {
-    keys: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ResizeArgs {
-    cols: usize,
-    rows: usize,
-}
 
 pub async fn start(
     command_tx: mpsc::Sender<Command>,
@@ -38,7 +24,7 @@ pub async fn start(
             line = input_rx.recv() => {
                 match line {
                     Some(line) => {
-                        match parse_line(&line) {
+                        match Command::parse_line(&line) {
                             Ok(command) => command_tx.send(command).await?,
                             Err(e) => eprintln!("command parse error: {e}"),
                         }
@@ -87,7 +73,7 @@ fn read_stdin(input_tx: mpsc::UnboundedSender<String>) -> Result<()> {
     Ok(())
 }
 
-fn parse_line(line: &str) -> Result<command::Command, String> {
+/*fn parse_line(line: &str) -> Result<command::Command, String> {
     serde_json::from_str::<serde_json::Value>(line)
         .map_err(|e| e.to_string())
         .and_then(build_command)
@@ -275,22 +261,21 @@ fn parse_key(key: String) -> InputSeq {
     };
 
     standard_key(seq)
-}
+}*/
 
 #[cfg(test)]
 mod test {
-    use super::{cursor_key, parse_line, standard_key, Command};
-    use crate::command::InputSeq;
+    use crate::command::{Command, InputSeq};
 
     #[test]
     fn parse_input() {
-        let command = parse_line(r#"{ "type": "input", "payload": "hello" }"#).unwrap();
-        assert!(matches!(command, Command::Input(input) if input == vec![standard_key("hello")]));
+        let command = Command::parse_line(r#"{ "type": "input", "payload": "hello" }"#).unwrap();
+        assert!(matches!(command, Command::Input(input) if input == vec![Command::standard_key("hello")]));
     }
 
     #[test]
     fn parse_input_missing_args() {
-        parse_line(r#"{ "type": "input" }"#).expect_err("should fail");
+        Command::parse_line(r#"{ "type": "input" }"#).expect_err("should fail");
     }
 
     #[test]
@@ -410,21 +395,21 @@ mod test {
         ];
 
         for [key, chars] in examples {
-            let command = parse_line(&format!(
+            let command = Command::parse_line(&format!(
                 "{{ \"type\": \"sendKeys\", \"keys\": [\"{key}\"] }}"
             ))
             .unwrap();
 
-            assert!(matches!(command, Command::Input(input) if input == vec![standard_key(chars)]));
+            assert!(matches!(command, Command::Input(input) if input == vec![Command::standard_key(chars)]));
         }
 
-        let command = parse_line(
+        let command = Command::parse_line(
             r#"{ "type": "sendKeys", "keys": ["hello", "Enter", "C-c", "A-^", "Left"] }"#,
         )
         .unwrap();
 
         assert!(
-            matches!(command, Command::Input(input) if input == vec![standard_key("hello"), standard_key("\x0d"), standard_key("\x03"), standard_key("\x1b^"), cursor_key("\x1b[D", "\x1bOD")])
+            matches!(command, Command::Input(input) if input == vec![Command::standard_key("hello"), Command::standard_key("\x0d"), Command::standard_key("\x03"), Command::standard_key("\x1b^"), cursor_key("\x1b[D", "\x1bOD")])
         );
     }
 
@@ -440,7 +425,7 @@ mod test {
         ];
 
         for [key, seq1, seq2] in examples {
-            let command = parse_line(&format!(
+            let command = Command::parse_line(&format!(
                 "{{ \"type\": \"sendKeys\", \"keys\": [\"{key}\"] }}"
             ))
             .unwrap();
@@ -461,28 +446,28 @@ mod test {
 
     #[test]
     fn parse_send_keys_missing_args() {
-        parse_line(r#"{ "type": "sendKeys" }"#).expect_err("should fail");
+        Command::parse_line(r#"{ "type": "sendKeys" }"#).expect_err("should fail");
     }
 
     #[test]
     fn parse_resize() {
-        let command = parse_line(r#"{ "type": "resize", "cols": 80, "rows": 24 }"#).unwrap();
+        let command = Command::parse_line(r#"{ "type": "resize", "cols": 80, "rows": 24 }"#).unwrap();
         assert!(matches!(command, Command::Resize(80, 24)));
     }
 
     #[test]
     fn parse_resize_missing_args() {
-        parse_line(r#"{ "type": "resize" }"#).expect_err("should fail");
+        Command::parse_line(r#"{ "type": "resize" }"#).expect_err("should fail");
     }
 
     #[test]
     fn parse_take_snapshot() {
-        let command = parse_line(r#"{ "type": "takeSnapshot" }"#).unwrap();
+        let command = Command::parse_line(r#"{ "type": "takeSnapshot" }"#).unwrap();
         assert!(matches!(command, Command::Snapshot));
     }
 
     #[test]
     fn parse_invalid_json() {
-        parse_line("{").expect_err("should fail");
+        Command::parse_line("{").expect_err("should fail");
     }
 }
