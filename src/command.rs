@@ -3,17 +3,17 @@ use serde::Deserialize;
 use crate::command;
 
 #[derive(Debug, Deserialize)]
-struct InputArgs {
+pub struct InputArgs {
     payload: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct SendKeysArgs {
+pub struct SendKeysArgs {
     keys: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct ResizeArgs {
+pub struct ResizeArgs {
     cols: usize,
     rows: usize,
 }
