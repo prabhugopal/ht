@@ -90,10 +90,7 @@ async fn do_drive_child(
                         }
 
                         Some(n) => {
-                            //output_tx.send(buf[0..n].to_vec()).await?;
-                            let data = buf[0..n].to_vec();
-                            println!("Output :: {}", String::from_utf8_lossy(&data.clone()));
-                            output_tx.send(data).await?;
+                            output_tx.send(buf[0..n].to_vec()).await?;
                         }
 
                         None => {
